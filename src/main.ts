@@ -1,4 +1,4 @@
-import { IRequest, Router } from 'itty-router';
+import { Router } from 'itty-router';
 import Email from './controllers/email';
 import AuthMiddleware from './middlewares/auth';
 import EmailSchemaMiddleware, { EmailRequest } from './middlewares/email';
