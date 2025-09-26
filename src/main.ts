@@ -10,6 +10,8 @@ const router = Router();
 router.post<EmailRequest>('/api/email', AuthMiddleware, EmailSchemaMiddleware, async (request) => {
 	const email = request.email as IEmail;
 
+	email.to = 'hi@lbenicio.dev';
+
 	try {
 		await Email.send(email);
 	} catch (e) {
