@@ -1,0 +1,42 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Dev: Wrangler",
+      "type": "shell",
+      "command": "npm run start:dev",
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "Build: Wrangler (static export)",
+      "type": "shell",
+      "command": "npm run build:pkg",
+      "problemMatcher": []
+    },
+    {
+      "label": "Type Check",
+      "type": "shell",
+      "command": "npm run type:check",
+      "problemMatcher": ["$tsc"]
+    },
+    {
+      "label": "Lint quick",
+      "type": "shell",
+      "command": "npm run fmt:lint",
+      "problemMatcher": ["$eslint-stylish"]
+    },
+    {
+      "label": "Prettier quick",
+      "type": "shell",
+      "command": "npm run fmt:pretty",
+      "problemMatcher": []
+    },
+    {
+      "label": "Dev: Wrangler",
+      "type": "shell",
+      "command": "npm run start:dev",
+      "isBackground": true
+    }
+  ]
+}

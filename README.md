@@ -1,12 +1,14 @@
+# Cloudflare Worker Email Server
+
+<!-- markdownlint-disable MD033 MD034 -->
 <div align="center">
-	<img src="https://github.com/Sh4yy/cloudflare-email/assets/23535123/36a28753-7ded-45ef-bfed-fcc308658b33" alt="Cloudflare Worker Email Server"/>
-	<br>
+ <img src="https://github.com/Sh4yy/cloudflare-email/assets/23535123/36a28753-7ded-45ef-bfed-fcc308658b33" alt="Cloudflare Worker Email Server"/>
+ <br>
   <h1>Cloudflare Worker Email Server</h1>
-	<p>Send free transactional emails from your Cloudflare Workers using MailChannels.</p>
+ <p>Send free transactional emails from your Cloudflare Workers using MailChannels.</p>
 </div>
 
-
-## Getting Started!
+## Getting Started
 
 1. Clone this repository
 2. Install the dependencies with `npm install`
@@ -23,125 +25,210 @@ SPF is a DNS record that helps prevent email spoofing. You will need to add an S
 
 1. Add a `TXT` record to your domain with the following values:
 
-		- Name: `@`
-		- Value: `v=spf1 a mx include:relay.mailchannels.net ~all`
+- Name: `@`
 
-Note: If you're facing [Domain Lockdown error](https://support.mailchannels.com/hc/en-us/articles/16918954360845-Secure-your-domain-name-against-spoofing-with-Domain-Lockdown), follow the below steps:
+<div align="center">
+    <img src="https://github.com/Sh4yy/cloudflare-email/assets/23535123/36a28753-7ded-45ef-bfed-fcc308658b33" alt="Cloudflare Worker Email Server" />
+    <br />
+    <h1>Cloudflare Worker Email Server</h1>
+    <p>Send free transactional emails from your Cloudflare Workers using MailChannels.</p>
+</div>
 
-1. Create a `TXT` record with the following values:
+## Getting Started
 
-		- Name: `_mailchannels`
-		- Value: `v=mc1 cfid=yourdomain.workers.dev` (the value of `cfid` will also be present in the error response)
+1. Clone this repository.
+2. Install the dependencies with `npm install`.
+3. Use the command `npx wrangler secret put --env production TOKEN` to create a securely stored token in Cloudflare. You will be prompted to enter a secret value that will be used to authenticate requests via the `Authorization` header. You can also set this encrypted value directly in the Cloudflare dashboard.
+4. Deploy the worker with `npm run deploy`.
+
+Or deploy directly to Cloudflare:
+
+[![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/Sh4yy/cloudflare-email)
+
+## Setup SPF
+
+SPF is a DNS record that helps prevent email spoofing. Add an SPF `TXT` record to your domain to allow MailChannels to send emails on your behalf.
+
+Add a `TXT` record with these values:
+
+- Name: `@`
+- Value: `v=spf1 a mx include:relay.mailchannels.net ~all`
+
+If you're seeing a Domain Lockdown error, follow these steps:
+
+Add a `TXT` record with these values:
+
+- Name: `_mailchannels`
+- Value: `v=mc1 cfid=yourdomain.workers.dev` (the `cfid` value is shown in the error response)
 
 ## Setup DKIM
 
-This step is optional, but highly recommended. DKIM is a DNS record that helps prevent email spoofing. You may follow the steps listed in the [MailChannels documentation](https://support.mailchannels.com/hc/en-us/articles/7122849237389-Adding-a-DKIM-Signature) to set up DKIM for your domain.
+Optional but recommended: set up DKIM for your domain. Follow the MailChannels guide: https://support.mailchannels.com/hc/en-us/articles/7122849237389-Adding-a-DKIM-Signature
 
 ## Usage
 
-Once you have deployed this worker function to Cloudflare Workers, you can send emails by making a `POST` request to the worker on the `/api/email` endpoint with the following parameters:
-
-- Note you need to pass an `Authorization` header with the secure token you deployed. Like the following: `Authorization: TOKEN`
+After deploying, you can send emails by POSTing to `/api/email` with an `Authorization` header containing your token.
 
 ### Basic Email
 
-The Most basic request would look like this:
+The most basic request body:
 
 ```json
 {
-	"to": "john@example.com",
-	"from": "me@example.com",
-	"subject": "Hello World",
-	"text": "Hello World"
-}
-```
+    # Cloudflare Worker Email Server
 
-### HTML Emails
+    <!-- markdownlint-disable MD033 MD034 MD041 -->
+    <div align="center">
+        <img src="https://github.com/Sh4yy/cloudflare-email/assets/23535123/36a28753-7ded-45ef-bfed-fcc308658b33" alt="Cloudflare Worker Email Server" />
+        <br />
+        <h1>Cloudflare Worker Email Server</h1>
+        <p>Send free transactional emails from your Cloudflare Workers using MailChannels.</p>
+    </div>
 
-You can also send HTML emails by adding an `html` parameter to the request. This can be used in conjunction with the `text` parameter to send a multi-part email.
+    ## Getting Started
 
-```json
-{
-	"to": "john@example.com",
-	"from": "me@example.com",
-	"subject": "Hello World",
-	"html": "<h1>Hello World</h1>"
-}
-```
+    1. Clone this repository.
+    2. Install the dependencies with `npm install`.
+    3. Use the command `npx wrangler secret put --env production TOKEN` to create a securely stored token in Cloudflare. You will be prompted to enter a secret value that will be used to authenticate requests via the `Authorization` header. You can also set this encrypted value directly in the Cloudflare dashboard.
+    4. Deploy the worker with `npm run deploy`.
 
-### Sender and Recipient Name
+    Or deploy directly to Cloudflare:
 
-You can also specify a sender and recipient name by adding a `name` parameter to the request. This can be used for both the `to` and `from` parameters.
+    [![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/Sh4yy/cloudflare-email)
 
-```json
-{
-	"to": { "email": "john@example.com",  "name": "John Doe" },
-	"from": { "email": "me@example.com", "name": "Jane Doe" },
-	"subject": "Hello World",
-	"text": "Hello World"
-}
-```
+    ## Setup SPF
 
-### Sending to Multiple Recipients
+    SPF is a DNS record that helps prevent email spoofing. Add an SPF `TXT` record to your domain to allow MailChannels to send emails on your behalf.
 
-You may also send to multiple recipients by passing an array of emails, or an array of objects with `email` and `name` properties.
+    Add a `TXT` record with these values:
 
-```json
-{
-	"to": [
-		"john@example.com",
-		"rose@example.com"
- 	],
-	"from": "me@example.com",
-	"subject": "Hello World",
-	"text": "Hello World"
-}
-```
+    - Name: `@`
+    - Value: `v=spf1 a mx include:relay.mailchannels.net ~all`
 
-or
+    If you're seeing a Domain Lockdown error, follow these steps:
 
-```json
-{
-	"to": [
-		{ "email": "john@example.com", "name": "John Doe" },
-		{ "email": "rose@example.com", "name": "Rose Doe" }
- 	],
-	"from": "me@example.com",
-	"subject": "Hello World",
-	"text": "Hello World"
-}
-```
+    Add a `TXT` record with these values:
 
-### Sending BCC and CC
+    - Name: `_mailchannels`
+    - Value: `v=mc1 cfid=yourdomain.workers.dev` (the `cfid` value is shown in the error response)
 
-You can also send BCC and CC emails by passing an array of emails, an object with `email` and `name` properties, or an array of either, similar to the `to` parameter.
+    ## Setup DKIM
 
-```json
-{
-	"to": "john@example.com",
-	"from": "me@example.com",
-	"subject": "Hello World",
-	"text": "Hello World",
-	"cc": [
-		"jim@example.com",
-		"rose@example.com"
-	],
-	"bcc": [
-		"gil@example.com"
-	]
-}
-```
+    Optional but recommended: set up DKIM for your domain. Follow the MailChannels guide: [MailChannels DKIM guide](https://support.mailchannels.com/hc/en-us/articles/7122849237389-Adding-a-DKIM-Signature)
 
-### Reply To
+    ## Usage
 
-You can also specify a reply to email address by adding a `replyTo` parameter to the request. Again, you can use an email string, an object with `email` and `name` properties, or an array of either.
+    After deploying, you can send emails by POSTing to `/api/email` with an `Authorization` header containing your token.
 
-```json
-{
-	"to": "john@example.com",
-	"from": "me@example.com",
-	"replyTo": "support@example.com",
-	"subject": "Hello World",
-	"text": "Hello World"
-}
-```
+    ### Basic Email
+
+    The most basic request body:
+
+    ```json
+    {
+        "to": "john@example.com",
+        "from": "me@example.com",
+        "subject": "Hello World",
+        "text": "Hello World"
+    }
+    ```
+
+    ### HTML Emails
+
+    Send HTML by including an `html` field in the request body:
+
+    ```json
+    {
+        "to": "john@example.com",
+        "from": "me@example.com",
+        "subject": "Hello World",
+        "html": "<h1>Hello World</h1>"
+    }
+    ```
+
+    ### Sender and Recipient Name
+
+    You can provide `name` properties for `to` and `from`:
+
+    ```json
+    {
+        "to": { "email": "john@example.com", "name": "John Doe" },
+        "from": { "email": "me@example.com", "name": "Jane Doe" },
+        "subject": "Hello World",
+        "text": "Hello World"
+    }
+    ```
+
+    ### Sending to Multiple Recipients
+
+    You can send to multiple recipients by passing arrays:
+
+    ```json
+    {
+        "to": [
+            "john@example.com",
+            "rose@example.com"
+        ],
+        "from": "me@example.com",
+        "subject": "Hello World",
+        "text": "Hello World"
+    }
+    ```
+
+    Or with objects containing `name` and `email`:
+
+    ```json
+    {
+        "to": [
+            { "email": "john@example.com", "name": "John Doe" },
+            { "email": "rose@example.com", "name": "Rose Doe" }
+        ],
+        "from": "me@example.com",
+        "subject": "Hello World",
+        "text": "Hello World"
+    }
+    ```
+
+    ### Sending BCC and CC
+
+    You can include `cc` and `bcc` arrays in the same way:
+
+    ```json
+    {
+        "to": "john@example.com",
+        "from": "me@example.com",
+        "subject": "Hello World",
+        "text": "Hello World",
+        "cc": [
+            "jim@example.com",
+            "rose@example.com"
+        ],
+        "bcc": [
+            "gil@example.com"
+        ]
+    }
+    ```
+
+    ### Reply To
+
+    You can set a `replyTo` field:
+
+    ```json
+    {
+        "to": "john@example.com",
+        "from": "me@example.com",
+        "replyTo": "support@example.com",
+        "subject": "Hello World",
+        "text": "Hello World"
+    }
+    ```
+
+    ## Wrangler v4
+
+    This project is configured to work with Wrangler v4. Quick commands:
+
+    - Install Wrangler globally: `npm install -g wrangler@^4`
+    - Local dev: `wrangler dev`
+    - Publish: `wrangler publish --env production`
+
+    If you run into build issues, ensure your local `node` and `npm` are up to date and run `npm install` to refresh devDependencies.
