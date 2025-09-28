@@ -1,0 +1,80 @@
+name: Release new version
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: release-on-master-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (full history for tags)
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Read version & prepare tag
+        id: prep
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v jq >/dev/null 2>&1; then
+              sudo apt-get update && sudo apt-get install -y jq >/dev/null
+          fi
+          VERSION=$(jq -r .version package.json 2>/dev/null || echo '')
+          if [ -z "$VERSION" ] || [ "$VERSION" = "null" ]; then
+              echo "::error::Unable to read version from package.json"; exit 1
+          fi
+          TAG="v${VERSION}"
+          if git rev-parse -q --verify "refs/tags/${TAG}" >/dev/null; then
+              echo "Tag ${TAG} already exists; will not recreate" >&2
+              echo "create_tag=false" >> "$GITHUB_OUTPUT"
+          else
+              echo "Creating tag ${TAG}" >&2
+              git tag -a "$TAG" -m "release: ${TAG}" "$GITHUB_SHA"
+              git push origin "$TAG"
+              echo "create_tag=true" >> "$GITHUB_OUTPUT"
+          fi
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        if: always() && steps.prep.outputs.tag != ''
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.prep.outputs.tag }}
+          release_name: ${{ steps.prep.outputs.tag }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+
+      - name: Publish workflow summary
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          ver="${{ steps.prep.outputs.version || 'unknown' }}"
+          tag="${{ steps.prep.outputs.tag || 'n/a' }}"
+          created_tag="${{ steps.prep.outputs.create_tag || 'false' }}"
+          echo "## Release – Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "Package version: ${ver}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Commit: $GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
+          echo "Tag: ${tag}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Tag newly created: ${created_tag}" >> "$GITHUB_STEP_SUMMARY"
+          if [ -n "${{ steps.create_release.outputs.upload_url }}" ]; then
+              echo "Release created: yes" >> "$GITHUB_STEP_SUMMARY"
+          else
+              echo "Release created: (possibly already existed)" >> "$GITHUB_STEP_SUMMARY"
+          fi

@@ -10,32 +10,6 @@
 
 ## Getting Started
 
-1. Clone this repository
-2. Install the dependencies with `npm install`
-3. Use the command `npx wrangler secret put --env production TOKEN` to deploy a securely stored token to Cloudflare. With this command, you will be prompted to enter a random secret value, which will be used to authenticate your requests with the HTTP `Authorization` header as described below. You can also set this encrypted value directly in your Cloudflare dashboard.
-4. Deploy the worker with `npm run deploy`
-
-Or deploy directly to Cloudflare
-
-[![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/Sh4yy/cloudflare-email)
-
-## Setup SPF
-
-SPF is a DNS record that helps prevent email spoofing. You will need to add an SPF record to your domain to allow MailChannels to send emails on your behalf.
-
-1. Add a `TXT` record to your domain with the following values:
-
-- Name: `@`
-
-<div align="center">
-    <img src="https://github.com/Sh4yy/cloudflare-email/assets/23535123/36a28753-7ded-45ef-bfed-fcc308658b33" alt="Cloudflare Worker Email Server" />
-    <br />
-    <h1>Cloudflare Worker Email Server</h1>
-    <p>Send free transactional emails from your Cloudflare Workers using MailChannels.</p>
-</div>
-
-## Getting Started
-
 1. Clone this repository.
 2. Install the dependencies with `npm install`.
 3. Use the command `npx wrangler secret put --env production TOKEN` to create a securely stored token in Cloudflare. You will be prompted to enter a secret value that will be used to authenticate requests via the `Authorization` header. You can also set this encrypted value directly in the Cloudflare dashboard.
