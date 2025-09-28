@@ -2,6 +2,8 @@
 	"name": "worker-email",
 	"version": "1.0.0",
 	"private": true,
+	"type": "module",
+	"license": "AGPL-3.0-only",
 	"scripts": {
 		"start:dev": "wrangler dev",
 		"deploy:prod": "wrangler publish --env production",
@@ -23,5 +25,24 @@
 		"prettier": "^2.8.8",
 		"typescript": "^5.0.4",
 		"wrangler": "^4.0.0"
-	}
+	},
+	"author": {
+		"name": "Leonardo Benicio",
+		"email": "hi@lbenicio.dev"
+	},
+	"bugs": {
+		"url": "https://github.com/lbenicio/cloudflare-email/issues"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/lbenicio/cloudflare-email.git"
+	},
+	"keywords": [
+		"cloudflare",
+		"email",
+		"worker",
+		"serverless",
+		"typescript",
+		"itty-router"
+	]
 }
