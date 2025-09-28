@@ -12,7 +12,11 @@
 		"fmt:all": "npm run fmt:lint && npm run fmt:pretty",
 		"dep:update": "npm-check-updates upgrade && npm run dep:install",
 		"dep:install": "npm install --no-fund --no-audit",
-		"type:check": "tsc --noEmit"
+		"type:check": "tsc --noEmit",
+		"docker:build": "DOCKER_BUILDKIT=0 docker image build --tag ghcr.io/lbenicio/cloudflare-email:latest --tag ghcr.io/lbenicio/cloudflare-email:$(node -p \"require('./package.json').version\") .",
+		"docker:push": "docker image push ghcr.io/lbenicio/cloudflare-email:latest",
+		"docker:release": "npm run docker:build && npm run docker:push",
+		"release:gen": "node scripts/generate_release.mjs --verbose --tag --push --bump"
 	},
 	"devDependencies": {
 		"@cloudflare/workers-types": "^4.20230419.0",

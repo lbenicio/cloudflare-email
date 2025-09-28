@@ -14,3 +14,4 @@ The format is based on Keep a Changelog and this project adheres to Semantic Ver
 - Updated `wrangler.toml` `compatibility_date` to `2025-09-27`.
 - Fixed `tsconfig.json` formatting (removed trailing comma) to ensure valid JSON and successful `tsc --noEmit` type check.
 - Cleaned and linted `README.md` (preserved HTML hero block) and added Wrangler v4 instructions.
+- Added Docker support: `Dockerfile`, `Dockerfile.dev`, and `docker-compose.yaml` for development and publish workflows.
