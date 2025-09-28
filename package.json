@@ -15,8 +15,13 @@
 	"devDependencies": {
 		"@cloudflare/workers-types": "^4.20230419.0",
 		"itty-router": "^4.0.9",
+		"npm-check-updates": "^18.3.0",
+		"eslint": "^9.35.0",
+		"eslint-config-prettier": "^10.1.8",
+		"eslint-plugin-import": "^2.32.0",
+		"eslint-plugin-jsx-a11y": "^6.10.2",
+		"prettier": "^2.8.8",
 		"typescript": "^5.0.4",
-		"wrangler": "^4.0.0",
-		"prettier": "^2.8.8"
+		"wrangler": "^4.0.0"
 	}
 }
