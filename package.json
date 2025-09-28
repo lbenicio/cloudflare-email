@@ -13,6 +13,8 @@
 		"dep:update": "npm-check-updates upgrade && npm run dep:install",
 		"dep:install": "npm install --no-fund --no-audit",
 		"type:check": "tsc --noEmit",
+		"test": "vitest",
+		"test:watch": "vitest --watch",
 		"docker:build": "DOCKER_BUILDKIT=0 docker image build --tag ghcr.io/lbenicio/cloudflare-email:latest --tag ghcr.io/lbenicio/cloudflare-email:$(node -p \"require('./package.json').version\") .",
 		"docker:push": "docker image push ghcr.io/lbenicio/cloudflare-email:latest",
 		"docker:release": "npm run docker:build && npm run docker:push",
@@ -28,7 +30,9 @@
 		"eslint-plugin-jsx-a11y": "^6.10.2",
 		"prettier": "^2.8.8",
 		"typescript": "^5.0.4",
-		"wrangler": "^4.0.0"
+		"wrangler": "^4.0.0",
+		"vitest": "^3.2.4",
+		"@types/node": "^18.0.0"
 	},
 	"author": {
 		"name": "Leonardo Benicio",

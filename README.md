@@ -206,3 +206,14 @@ The most basic request body:
     - Publish: `wrangler publish --env production`
 
     If you run into build issues, ensure your local `node` and `npm` are up to date and run `npm install` to refresh devDependencies.
+
+    ## CI / GitHub Actions
+
+    A workflow is included to build and deploy on pushes to `main` (`.github/workflows/deploy.yml`).
+
+    Required repository secrets:
+
+    - `CF_API_TOKEN` — Cloudflare API token with Workers publish permissions.
+    - `CF_ACCOUNT_ID` — Your Cloudflare account ID.
+
+    The workflow runs `npm ci`, `npm run type:check`, and then uses the official `cloudflare/wrangler-action` to publish to Cloudflare.
