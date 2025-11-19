@@ -1,20 +1,20 @@
 import { EmailMessage } from 'cloudflare:email';
-import { createMimeMessage, Mailbox } from 'mimetext';
 import { IContact, IEmail } from '../schema/email';
+
+const EOL = '\r\n';
 
 class Email {
 	/**
 	 * Sends an email using Cloudflare's native send_email binding.
 	 */
 	static async send(email: IEmail, env: Env) {
-		const message = Email.createEmailMessage(email, env);
+		Email.assertEnv(env);
+		const raw = Email.buildMimeMessage(email, env);
+		const message = new EmailMessage(env.CONTACT_FROM, env.CONTACT_TO, raw);
 		await env.SEND_EMAIL.send(message);
 	}
 
-	/**
-	 * Builds a fully formatted MIME message and wraps it in an EmailMessage instance.
-	 */
-	protected static createEmailMessage(email: IEmail, env: Env): EmailMessage {
+	protected static assertEnv(env: Env) {
 		if (!env?.CONTACT_FROM) {
 			throw new Error('CONTACT_FROM is not configured.');
 		}
@@ -26,38 +26,82 @@ class Email {
 		if (!env?.SEND_EMAIL) {
 			throw new Error('SEND_EMAIL binding is not configured.');
 		}
-
-		const mime = createMimeMessage();
-		mime.setSender(env.CONTACT_FROM);
-		mime.setRecipient(env.CONTACT_TO);
-		mime.setSubject(email.subject);
-
-		Email.attachBody(mime, email);
-		Email.attachReplyToHeader(mime, email.from);
-		mime.setHeader('X-Contact-From', Email.stringifyContact(email.from));
-
-		return new EmailMessage(env.CONTACT_FROM, env.CONTACT_TO, mime.asRaw());
 	}
 
-	/**
-	 * Adds text/html body parts based on the payload.
-	 */
-	protected static attachBody(mime: ReturnType<typeof createMimeMessage>, email: IEmail) {
+	protected static buildMimeMessage(email: IEmail, env: Env): string {
+		const sanitizedFrom = Email.sanitizeHeaderValue(env.CONTACT_FROM);
+		const sanitizedTo = Email.sanitizeHeaderValue(env.CONTACT_TO);
+		const subject = Email.sanitizeHeaderValue(email.subject);
+		const replyTo = Email.sanitizeHeaderValue(Email.stringifyContact(email.from));
+		const contactFrom = Email.sanitizeHeaderValue(Email.stringifyContact(email.from));
+		const dateHeader = new Date().toUTCString();
+		const messageId = Email.buildMessageId(sanitizedFrom);
+		const headers: string[] = [
+			`Date: ${dateHeader}`,
+			`From: ${sanitizedFrom}`,
+			`To: ${sanitizedTo}`,
+			`Subject: ${subject}`,
+			`Message-ID: ${messageId}`,
+			'Reply-To: ' + replyTo,
+			'X-Contact-From: ' + contactFrom,
+			'MIME-Version: 1.0',
+		];
+
+		const hasText = Boolean(email.text);
+		const hasHtml = Boolean(email.html);
+		let body = '';
+
+		if (hasText && hasHtml) {
+			const boundary = Email.generateBoundary();
+			headers.push(`Content-Type: multipart/alternative; boundary="${boundary}"`);
+			body = Email.buildMultipartBody(boundary, email);
+		} else {
+			const contentType = hasHtml ? 'text/html' : 'text/plain';
+			headers.push(`Content-Type: ${contentType}; charset=utf-8`);
+			headers.push('Content-Transfer-Encoding: 7bit');
+			body = (email.html ?? email.text ?? '').trimEnd();
+		}
+
+		return `${headers.join(EOL)}${EOL}${EOL}${body}${EOL}`;
+	}
+
+	protected static buildMultipartBody(boundary: string, email: IEmail): string {
+		const sections: string[] = [];
+
 		if (email.text) {
-			mime.addMessage({ contentType: 'text/plain', data: email.text });
+			sections.push(
+				`--${boundary}` +
+					`${EOL}Content-Type: text/plain; charset=utf-8${EOL}Content-Transfer-Encoding: 7bit${EOL}${EOL}${email.text}${EOL}`
+			);
 		}
 
 		if (email.html) {
-			mime.addMessage({ contentType: 'text/html', data: email.html });
+			sections.push(
+				`--${boundary}` + `${EOL}Content-Type: text/html; charset=utf-8${EOL}Content-Transfer-Encoding: 7bit${EOL}${EOL}${email.html}${EOL}`
+			);
 		}
+
+		sections.push(`--${boundary}--`);
+		return sections.join(EOL) + EOL;
 	}
 
-	/**
-	 * Ensures replies in the inbox go back to the original sender.
-	 */
-	protected static attachReplyToHeader(mime: ReturnType<typeof createMimeMessage>, from: IContact) {
-		const mailbox = Email.toMailbox(from);
-		mime.setHeader('Reply-To', mailbox);
+	protected static generateBoundary() {
+		return `----cf-email-${crypto.randomUUID()}`;
+	}
+
+	protected static buildMessageId(fromHeader: string) {
+		const domain = Email.extractDomain(fromHeader) || 'worker.email';
+		return `<${crypto.randomUUID()}@${domain}>`;
+	}
+
+	protected static extractDomain(headerValue: string) {
+		const emailMatch = headerValue.match(/<([^>]+)>/);
+		const addr = emailMatch?.[1] ?? headerValue;
+		return addr.split('@')[1] ?? '';
+	}
+
+	protected static sanitizeHeaderValue(value: string) {
+		return value.replace(/[\r\n]+/g, ' ').trim();
 	}
 
 	protected static stringifyContact(contact: IContact): string {
@@ -65,15 +109,9 @@ class Email {
 			return contact;
 		}
 
-		return contact.name ? `${contact.name} <${contact.email}>` : contact.email;
-	}
-
-	protected static toMailbox(contact: IContact): Mailbox {
-		if (typeof contact === 'string') {
-			return new Mailbox(contact);
-		}
-
-		return new Mailbox({ addr: contact.email, name: contact.name });
+		const name = contact.name ? Email.sanitizeHeaderValue(contact.name) : '';
+		const email = Email.sanitizeHeaderValue(contact.email);
+		return name ? `${name} <${email}>` : email;
 	}
 }
 
