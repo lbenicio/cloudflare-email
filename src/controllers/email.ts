@@ -29,6 +29,7 @@ class Email {
 				method: 'POST',
 				headers: {
 					'content-type': 'application/json',
+					'X-Api-Key': process.env.MAILCHANNELS_API_KEY ?? '',
 				},
 				body: JSON.stringify(mcEmail),
 			})
