@@ -6,7 +6,7 @@
 	"license": "AGPL-3.0-only",
 	"scripts": {
 		"start:dev": "wrangler dev",
-		"deploy:prod": "wrangler publish --env production",
+		"deploy:prod": "wrangler deploy --env production",
 		"fmt:lint": "eslint . --ext .ts,.tsx --fix",
 		"fmt:pretty": "prettier --write .",
 		"fmt:all": "npm run fmt:lint && npm run fmt:pretty",

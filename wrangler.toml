@@ -21,3 +21,18 @@ CONTACT_FROM = "contact-form@8536110.xyz"
 name = "SEND_EMAIL"
 allowed_destination_addresses = ["hi@lbenicio.dev"]
 allowed_sender_addresses = ["contact-form@8536110.xyz"]
+
+[observability]
+enabled = false
+head_sampling_rate = 1
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+persist = true
+invocation_logs = true
+
+[observability.traces]
+enabled = false
+persist = true
+head_sampling_rate = 1
