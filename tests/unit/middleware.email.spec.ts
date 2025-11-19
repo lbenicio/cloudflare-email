@@ -4,7 +4,7 @@ import EmailSchemaMiddleware from '../../src/middlewares/email';
 
 describe('EmailSchemaMiddleware', () => {
 	test('attaches email on valid body', async () => {
-		const body = { to: 'a@b.com', from: 'me@me.com', subject: 'hi' };
+		const body = { from: 'me@me.com', subject: 'hi', text: 'hello' };
 		const req = new Request('http://localhost/api', {
 			method: 'POST',
 			body: JSON.stringify(body),
@@ -14,6 +14,19 @@ describe('EmailSchemaMiddleware', () => {
 		await EmailSchemaMiddleware(req);
 		expect(req.email).toBeDefined();
 		expect(req.email.subject).toBe('hi');
+	});
+
+	test('accepts html-only payloads', async () => {
+		const body = { from: 'me@me.com', subject: 'hi', html: '<strong>hello</strong>' };
+		const req = new Request('http://localhost/api', {
+			method: 'POST',
+			body: JSON.stringify(body),
+			headers: { 'content-type': 'application/json' },
+		}) as any;
+
+		await EmailSchemaMiddleware(req);
+		expect(req.email).toBeDefined();
+		expect(req.email.html).toContain('hello');
 	});
 
 	test('returns Response on invalid body', async () => {

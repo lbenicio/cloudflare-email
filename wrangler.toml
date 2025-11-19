@@ -2,4 +2,22 @@ name = "worker-email"
 main = "src/main.ts"
 compatibility_date = "2025-09-27"
 
+[vars]
+CONTACT_TO = "contact@example.com"
+CONTACT_FROM = "no-reply@example.com"
+
+[[send_email]]
+name = "SEND_EMAIL"
+allowed_destination_addresses = ["contact@example.com"]
+allowed_sender_addresses = ["no-reply@example.com"]
+
 [env.production]
+
+[env.production.vars]
+CONTACT_TO = "contact@example.com"
+CONTACT_FROM = "no-reply@example.com"
+
+[[env.production.send_email]]
+name = "SEND_EMAIL"
+allowed_destination_addresses = ["contact@example.com"]
+allowed_sender_addresses = ["no-reply@example.com"]

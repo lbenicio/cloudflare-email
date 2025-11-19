@@ -3,217 +3,99 @@
 <!-- markdownlint-disable MD033 MD034 -->
 <div align="center">
  <img src="https://github.com/Sh4yy/cloudflare-email/assets/23535123/36a28753-7ded-45ef-bfed-fcc308658b33" alt="Cloudflare Worker Email Server"/>
- <br>
+ <br />
   <h1>Cloudflare Worker Email Server</h1>
- <p>Send free transactional emails from your Cloudflare Workers using MailChannels.</p>
+ <p>Send contact-form style emails from Cloudflare Workers using Cloudflare Email Routing.</p>
 </div>
 
 ## Getting Started
 
-1. Clone this repository.
-2. Install the dependencies with `npm install`.
-3. Use the command `npx wrangler secret put --env production TOKEN` to create a securely stored token in Cloudflare. You will be prompted to enter a secret value that will be used to authenticate requests via the `Authorization` header. You can also set this encrypted value directly in the Cloudflare dashboard.
-4. Deploy the worker with `npm run deploy`.
+1. **Clone and install**
 
-Or deploy directly to Cloudflare:
+  ```bash
+  git clone https://github.com/lbenicio/cloudflare-email.git
+  cd cloudflare-email
+  npm install
+  ```
 
-[![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/Sh4yy/cloudflare-email)
+2. **Configure environment variables** – edit `wrangler.toml` and set `CONTACT_FROM` (an email on a domain managed by Cloudflare Email Routing) and `CONTACT_TO` (the destination inbox you verified in Email Routing).
+3. **Add the auth token** – store your shared secret with `wrangler secret put TOKEN` (repeat for each environment you use).
+4. **Enable `send_email` binding** – Email Routing must be enabled for your zone and at least one `send_email` binding has to be configured (see below).
+5. **Deploy** – `npm run deploy:prod` publishes the Worker (local dev: `npm run start:dev`).
 
-## Setup SPF
+## Cloudflare Email Routing setup
 
-SPF is a DNS record that helps prevent email spoofing. Add an SPF `TXT` record to your domain to allow MailChannels to send emails on your behalf.
+- Follow the [Email Routing quick-start](https://developers.cloudflare.com/email-routing/get-started/) to verify both the sender domain and the destination inbox.
+- Add DNS records (SPF, DKIM, and routing-specific records) suggested by Cloudflare after enabling Email Routing.
+- Declare the binding in `wrangler.toml` (one per environment). Example:
 
-Add a `TXT` record with these values:
+  ```toml
+  [[send_email]]
+  name = "SEND_EMAIL"
+  destination_address = "contact@example.com"
+  allowed_sender_addresses = ["no-reply@example.com"]
+  ```
 
-- Name: `@`
-- Value: `v=spf1 a mx include:relay.mailchannels.net ~all`
+  Use `allowed_destination_addresses` if you want to allow multiple inboxes instead of a single `destination_address`.
+- Keep `CONTACT_FROM`/`CONTACT_TO` consistent with the binding restrictions or Cloudflare will reject the send attempt.
 
-If you're seeing a Domain Lockdown error, follow these steps:
+## Authentication
 
-Add a `TXT` record with these values:
+Requests must include an `Authorization` header that matches the `TOKEN` secret stored in your Worker environment. Example:
 
-- Name: `_mailchannels`
-- Value: `v=mc1 cfid=yourdomain.workers.dev` (the `cfid` value is shown in the error response)
-
-## Setup DKIM
-
-Optional but recommended: set up DKIM for your domain. Follow the MailChannels guide: https://support.mailchannels.com/hc/en-us/articles/7122849237389-Adding-a-DKIM-Signature
+```http
+POST /api/email HTTP/1.1
+Host: <your-worker>
+Authorization: super-secret-token
+Content-Type: application/json
+```
 
 ## Usage
 
-After deploying, you can send emails by POSTing to `/api/email` with an `Authorization` header containing your token.
+`/api/email` accepts JSON payloads that contain the visitor’s address, subject, and at least one body field (text or HTML). The Worker injects the actual recipient/sender addresses based on `CONTACT_TO`/`CONTACT_FROM` before calling Cloudflare’s native email API.
 
-### Basic Email
-
-The most basic request body:
+### Basic payload
 
 ```json
 {
-    # Cloudflare Worker Email Server
+  "from": "visitor@example.com",
+  "subject": "Need a quote",
+  "text": "Hey! Please call me back."
+}
+```
 
-    <!-- markdownlint-disable MD033 MD034 MD041 -->
-    <div align="center">
-        <img src="https://github.com/Sh4yy/cloudflare-email/assets/23535123/36a28753-7ded-45ef-bfed-fcc308658b33" alt="Cloudflare Worker Email Server" />
-        <br />
-        <h1>Cloudflare Worker Email Server</h1>
-        <p>Send free transactional emails from your Cloudflare Workers using MailChannels.</p>
-    </div>
+### HTML payload
 
-    ## Getting Started
+```json
+{
+  "from": { "email": "visitor@example.com", "name": "Jane Doe" },
+  "subject": "Website contact",
+  "html": "<p>Could you tell me more about your services?</p>"
+}
+```
 
-    1. Clone this repository.
-    2. Install the dependencies with `npm install`.
-    3. Use the command `npx wrangler secret put --env production TOKEN` to create a securely stored token in Cloudflare. You will be prompted to enter a secret value that will be used to authenticate requests via the `Authorization` header. You can also set this encrypted value directly in the Cloudflare dashboard.
-    4. Deploy the worker with `npm run deploy`.
+Rules:
 
-    Or deploy directly to Cloudflare:
+- `from` accepts either a string (`"user@example.com"`) or an object with `email` and optional `name`.
+- `subject` must be a non-empty string.
+- You must provide at least one body field: `text` or `html`.
+- The Worker sets the `Reply-To` header to the `from` value so you can reply directly from your inbox.
 
-    [![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/Sh4yy/cloudflare-email)
+## Development and testing
 
-    ## Setup SPF
+- **Local dev**: `npm run start:dev`
+- **Type checking**: `npm run type:check`
+- **Tests**: `npm test`
+- **Formatting**: `npm run fmt:all`
 
-    SPF is a DNS record that helps prevent email spoofing. Add an SPF `TXT` record to your domain to allow MailChannels to send emails on your behalf.
+Vitest unit and E2E tests cover the middleware, routing, and the Cloudflare email integration shim. Run them before deploying to ensure your changes keep working.
 
-    Add a `TXT` record with these values:
+## Deploying
 
-    - Name: `@`
-    - Value: `v=spf1 a mx include:relay.mailchannels.net ~all`
+Use Wrangler to deploy:
 
-    If you're seeing a Domain Lockdown error, follow these steps:
+```bash
+npm run deploy:prod
+```
 
-    Add a `TXT` record with these values:
-
-    - Name: `_mailchannels`
-    - Value: `v=mc1 cfid=yourdomain.workers.dev` (the `cfid` value is shown in the error response)
-
-    ## Setup DKIM
-
-    Optional but recommended: set up DKIM for your domain. Follow the MailChannels guide: [MailChannels DKIM guide](https://support.mailchannels.com/hc/en-us/articles/7122849237389-Adding-a-DKIM-Signature)
-
-    ## Usage
-
-    After deploying, you can send emails by POSTing to `/api/email` with an `Authorization` header containing your token.
-
-    ### Basic Email
-
-    The most basic request body:
-
-    ```json
-    {
-        "to": "john@example.com",
-        "from": "me@example.com",
-        "subject": "Hello World",
-        "text": "Hello World"
-    }
-    ```
-
-    ### HTML Emails
-
-    Send HTML by including an `html` field in the request body:
-
-    ```json
-    {
-        "to": "john@example.com",
-        "from": "me@example.com",
-        "subject": "Hello World",
-        "html": "<h1>Hello World</h1>"
-    }
-    ```
-
-    ### Sender and Recipient Name
-
-    You can provide `name` properties for `to` and `from`:
-
-    ```json
-    {
-        "to": { "email": "john@example.com", "name": "John Doe" },
-        "from": { "email": "me@example.com", "name": "Jane Doe" },
-        "subject": "Hello World",
-        "text": "Hello World"
-    }
-    ```
-
-    ### Sending to Multiple Recipients
-
-    You can send to multiple recipients by passing arrays:
-
-    ```json
-    {
-        "to": [
-            "john@example.com",
-            "rose@example.com"
-        ],
-        "from": "me@example.com",
-        "subject": "Hello World",
-        "text": "Hello World"
-    }
-    ```
-
-    Or with objects containing `name` and `email`:
-
-    ```json
-    {
-        "to": [
-            { "email": "john@example.com", "name": "John Doe" },
-            { "email": "rose@example.com", "name": "Rose Doe" }
-        ],
-        "from": "me@example.com",
-        "subject": "Hello World",
-        "text": "Hello World"
-    }
-    ```
-
-    ### Sending BCC and CC
-
-    You can include `cc` and `bcc` arrays in the same way:
-
-    ```json
-    {
-        "to": "john@example.com",
-        "from": "me@example.com",
-        "subject": "Hello World",
-        "text": "Hello World",
-        "cc": [
-            "jim@example.com",
-            "rose@example.com"
-        ],
-        "bcc": [
-            "gil@example.com"
-        ]
-    }
-    ```
-
-    ### Reply To
-
-    You can set a `replyTo` field:
-
-    ```json
-    {
-        "to": "john@example.com",
-        "from": "me@example.com",
-        "replyTo": "support@example.com",
-        "subject": "Hello World",
-        "text": "Hello World"
-    }
-    ```
-
-    ## Wrangler v4
-
-    This project is configured to work with Wrangler v4. Quick commands:
-
-    - Install Wrangler globally: `npm install -g wrangler@^4`
-    - Local dev: `wrangler dev`
-    - Publish: `wrangler publish --env production`
-
-    If you run into build issues, ensure your local `node` and `npm` are up to date and run `npm install` to refresh devDependencies.
-
-    ## CI / GitHub Actions
-
-    A workflow is included to build and deploy on pushes to `main` (`.github/workflows/deploy.yml`).
-
-    Required repository secrets:
-
-    - `CF_API_TOKEN` — Cloudflare API token with Workers publish permissions.
-    - `CF_ACCOUNT_ID` — Your Cloudflare account ID.
-
-    The workflow runs `npm ci`, `npm run type:check`, and then uses the official `cloudflare/wrangler-action` to publish to Cloudflare.
+Ensure the production environment in `wrangler.toml` mirrors the bindings/vars required for Email Routing. Update the `TOKEN`, `CONTACT_FROM`, and `CONTACT_TO` values whenever they change.

@@ -1,135 +1,79 @@
+import { EmailMessage } from 'cloudflare:email';
+import { createMimeMessage, Mailbox } from 'mimetext';
 import { IContact, IEmail } from '../schema/email';
-
-type IMCPersonalization = { to: IMCContact[] };
-type IMCContact = { email: string; name: string | undefined };
-type IMCContent = { type: string; value: string };
-
-interface IMCEmail {
-	personalizations: IMCPersonalization[];
-	from: IMCContact;
-	reply_to: IMCContact | undefined;
-	cc: IMCContact[] | undefined;
-	bcc: IMCContact[] | undefined;
-	subject: string;
-	content: IMCContent[];
-}
 
 class Email {
 	/**
-	 *
-	 * @param email
+	 * Sends an email using Cloudflare's native send_email binding.
 	 */
-	static async send(email: IEmail) {
-		// convert email to IMCEmail (MailChannels Email)
-		const mcEmail: IMCEmail = Email.convertEmail(email);
-
-		// send email through MailChannels
-		const resp = await fetch(
-			new Request('https://api.mailchannels.net/tx/v1/send', {
-				method: 'POST',
-				headers: {
-					'content-type': 'application/json',
-					'X-Api-Key': process.env.MAILCHANNELS_API_KEY ?? '',
-				},
-				body: JSON.stringify(mcEmail),
-			})
-		);
-
-		// check if email was sent successfully
-		if (resp.status > 299 || resp.status < 200) {
-			throw new Error(`Error sending email: ${resp.status} ${resp.statusText}`);
-		}
+	static async send(email: IEmail, env: Env) {
+		const message = Email.createEmailMessage(email, env);
+		await env.SEND_EMAIL.send(message);
 	}
 
 	/**
-	 * Converts an IEmail to an IMCEmail
-	 * @param email
-	 * @protected
+	 * Builds a fully formatted MIME message and wraps it in an EmailMessage instance.
 	 */
-	protected static convertEmail(email: IEmail): IMCEmail {
-		const personalizations: IMCPersonalization[] = [];
-
-		// Convert 'to' field
-		const toContacts: IMCContact[] = Email.convertContacts(email.to);
-		personalizations.push({ to: toContacts });
-
-		let replyTo: IMCContact | undefined = undefined;
-		let bccContacts: IMCContact[] | undefined = undefined;
-		let ccContacts: IMCContact[] | undefined = undefined;
-
-		// Convert 'replyTo' field
-		if (email.replyTo) {
-			const replyToContacts: IMCContact[] = Email.convertContacts(email.replyTo);
-			replyTo = replyToContacts.length > 0 ? replyToContacts[0] : { email: '', name: undefined };
+	protected static createEmailMessage(email: IEmail, env: Env): EmailMessage {
+		if (!env?.CONTACT_FROM) {
+			throw new Error('CONTACT_FROM is not configured.');
 		}
 
-		// Convert 'cc' field
-		if (email.cc) {
-			ccContacts = Email.convertContacts(email.cc);
+		if (!env?.CONTACT_TO) {
+			throw new Error('CONTACT_TO is not configured.');
 		}
 
-		// Convert 'bcc' field
-		if (email.bcc) {
-			bccContacts = Email.convertContacts(email.bcc);
+		if (!env?.SEND_EMAIL) {
+			throw new Error('SEND_EMAIL binding is not configured.');
 		}
 
-		const from: IMCContact = Email.convertContact(email.from);
+		const mime = createMimeMessage();
+		mime.setSender(env.CONTACT_FROM);
+		mime.setRecipient(env.CONTACT_TO);
+		mime.setSubject(email.subject);
 
-		// Convert 'subject' field
-		const subject: string = email.subject;
+		Email.attachBody(mime, email);
+		Email.attachReplyToHeader(mime, email.from);
+		mime.setHeader('X-Contact-From', Email.stringifyContact(email.from));
 
-		// Convert 'text' field
-		const textContent: IMCContent[] = [];
+		return new EmailMessage(env.CONTACT_FROM, env.CONTACT_TO, mime.asRaw());
+	}
+
+	/**
+	 * Adds text/html body parts based on the payload.
+	 */
+	protected static attachBody(mime: ReturnType<typeof createMimeMessage>, email: IEmail) {
 		if (email.text) {
-			textContent.push({ type: 'text/plain', value: email.text });
+			mime.addMessage({ contentType: 'text/plain', data: email.text });
 		}
 
-		// Convert 'html' field
-		const htmlContent: IMCContent[] = [];
 		if (email.html) {
-			htmlContent.push({ type: 'text/html', value: email.html });
+			mime.addMessage({ contentType: 'text/html', data: email.html });
 		}
-
-		const content: IMCContent[] = [...textContent, ...htmlContent];
-
-		return {
-			personalizations,
-			from,
-			cc: ccContacts,
-			bcc: bccContacts,
-			reply_to: replyTo,
-			subject,
-			content,
-		};
 	}
 
 	/**
-	 * Converts an IContact or IContact[] to a Contact[]
-	 * @param contacts
-	 * @protected
+	 * Ensures replies in the inbox go back to the original sender.
 	 */
-	protected static convertContacts(contacts: IContact | IContact[]): IMCContact[] {
-		if (!contacts) {
-			return [];
-		}
-
-		const contactArray: IContact[] = Array.isArray(contacts) ? contacts : [contacts];
-		const convertedContacts: IMCContact[] = contactArray.map(Email.convertContact);
-
-		return convertedContacts;
+	protected static attachReplyToHeader(mime: ReturnType<typeof createMimeMessage>, from: IContact) {
+		const mailbox = Email.toMailbox(from);
+		mime.setHeader('Reply-To', mailbox);
 	}
 
-	/**
-	 * Converts an IContact to a Contact
-	 * @param contact
-	 * @protected
-	 */
-	protected static convertContact(contact: IContact): IMCContact {
+	protected static stringifyContact(contact: IContact): string {
 		if (typeof contact === 'string') {
-			return { email: contact, name: undefined };
+			return contact;
 		}
 
-		return { email: contact.email, name: contact.name };
+		return contact.name ? `${contact.name} <${contact.email}>` : contact.email;
+	}
+
+	protected static toMailbox(contact: IContact): Mailbox {
+		if (typeof contact === 'string') {
+			return new Mailbox(contact);
+		}
+
+		return new Mailbox({ addr: contact.email, name: contact.name });
 	}
 }
 

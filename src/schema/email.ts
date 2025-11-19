@@ -8,16 +8,17 @@ const iContactSchema = z.union([
 	}),
 ]);
 
-const iEmailSchema = z.object({
-	to: z.union([iContactSchema, z.array(iContactSchema)]),
-	replyTo: z.union([iContactSchema, z.array(iContactSchema)]).optional(),
-	cc: z.union([iContactSchema, z.array(iContactSchema)]).optional(),
-	bcc: z.union([iContactSchema, z.array(iContactSchema)]).optional(),
-	from: iContactSchema,
-	subject: z.string(),
-	text: z.union([z.string(), z.undefined()]),
-	html: z.union([z.string(), z.undefined()]),
-});
+const iEmailSchema = z
+	.object({
+		from: iContactSchema,
+		subject: z.string().min(1),
+		text: z.string().optional(),
+		html: z.string().optional(),
+	})
+	.refine((data) => data.text || data.html, {
+		message: 'Either "text" or "html" must be provided.',
+		path: ['text'],
+	});
 
 export type IContact = z.infer<typeof iContactSchema>;
 export type IEmail = z.infer<typeof iEmailSchema>;

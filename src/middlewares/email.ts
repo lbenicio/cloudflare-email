@@ -10,13 +10,25 @@ export type EmailRequest = Request & {
  * @constructor
  */
 const EmailSchemaMiddleware = async (request: EmailRequest) => {
-	const content = await request.json();
-	const email = iEmailSchema.safeParse(content);
+	let content: unknown = {};
+
+	try {
+		content = await request.json();
+	} catch (err) {
+		console.warn('EmailSchemaMiddleware: Failed to parse body as JSON', err);
+	}
+
+	console.log('EmailSchemaMiddleware: Validating email', content);
+	const email = iEmailSchema.safeParse(content ?? {});
+	console.log('EmailSchemaMiddleware: Validation result', email);
 	if (email.success) {
 		request.email = email.data;
+		console.log('EmailSchemaMiddleware: Email validated successfully');
 		return;
 	}
 
+	console.log('EmailSchemaMiddleware: Validation failed');
+	console.log(email.error);
 	return new Response('Bad Request', {
 		status: 400,
 	});
